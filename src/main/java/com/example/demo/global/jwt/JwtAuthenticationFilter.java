@@ -2,10 +2,10 @@ package com.example.demo.global.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,8 +15,6 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.util.Collections;
 
 @Component
 @RequiredArgsConstructor
@@ -31,7 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         try {
-            // 1. 쿠키에서 JWT 토큰 추출 (우선순위: 쿠키 > 헤더)
+            // 1. Authorization 헤더에서 JWT 토큰 추출
             String accessToken = extractTokenFromRequest(request);
 
             // 2. 토큰이 있고 유효한지 확인
@@ -40,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 3. 토큰에서 kakao_id 추출
                 String kakaoId = jwtTokenProvider.getKakaoIdFromToken(accessToken);
 
-                // 4. 간단한 인증 객체 생성 (DB 조회 없음!)
+                // 4. 간단한 인증 객체 생성 (DB 조회 없음)
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 kakaoId,  // principal: 사용자 식별자
@@ -68,33 +66,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    // HTTP 요청에서 JWT 토큰 추출 (쿠키 우선, 헤더 보조)
+    // Authorization 헤더에서 JWT 토큰 추출
     private String extractTokenFromRequest(HttpServletRequest request) {
-        // 1. 쿠키에서 accessToken 확인 (우선순위)
-        String cookieToken = extractTokenFromCookie(request, "accessToken");
-        if (StringUtils.hasText(cookieToken)) {
-            return cookieToken;
-        }
-
-        // 2. Authorization 헤더에서 토큰 확인 (API 호출용)
         String bearerToken = request.getHeader("Authorization");
+
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7); // "Bearer " 제거
-        }
-
-        return null;
-    }
-
-    // 쿠키에서 특정 이름의 토큰을 추출하는 메서드
-    private String extractTokenFromCookie(HttpServletRequest request, String cookieName) {
-        Cookie[] cookies = request.getCookies();
-
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (cookieName.equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
         }
 
         return null;
@@ -110,7 +87,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/images/")
                 || path.equals("/")
                 || path.equals("/index.html")
-                || path.startsWith("/api/auth/")  // 로그인 관련 API는 제외
                 || path.startsWith("/oauth2/")    // OAuth2 관련 경로 제외
                 || path.startsWith("/login/");    // 로그인 페이지 제외
     }

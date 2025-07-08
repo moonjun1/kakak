@@ -16,6 +16,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -32,11 +38,19 @@ public class SecurityConfig {
     }
 
     @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         return http
-                // CSRF 보호 기능 비활성화 (JWT 사용하므로 불필요)
+                // CSRF 보호 기능 비활성화 (REST API이므로 불필요)
                 .csrf(AbstractHttpConfigurer::disable)
+
+                // CORS 설정 (REST API를 위한 CORS 허용)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // URL별 접근 권한 설정
                 .authorizeHttpRequests(auth -> auth
@@ -54,36 +68,70 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                // 인증 실패시 예외 처리
+                // 인증 실패시 예외 처리 (JSON 응답)
                 .exceptionHandling(e -> e
                         // 인증되지 않은 사용자가 접근할 때
                         .authenticationEntryPoint((request, response, authException) -> {
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"인증이 필요합니다\"}");
                         })
                         // 권한이 없는 사용자가 접근할 때
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"접근 권한이 없습니다\"}");
                         })
                 )
 
-                // 세션 관리 정책 설정
+                // 세션 관리 정책 설정 (완전한 무상태)
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // 세션 사용 안함
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // OAuth2 로그인 설정 (새로 추가)
+                // OAuth2 로그인 설정
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login")  // 로그인 페이지 경로
                         .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService)  // 커스텀 OAuth2 사용자 서비스
+                                .userService(customOAuth2UserService)
                         )
-                        .successHandler(oAuth2LoginSuccessHandler)  // 로그인 성공 핸들러
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("{\"error\":\"OAuth2 Login Failed\",\"message\":\"" + exception.getMessage() + "\"}");
+                        })
                 )
 
                 // JWT 필터를 Spring Security 필터 체인에 추가
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
                 .build();
+    }
+
+    // CORS 설정 (REST API를 위한 설정)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // 허용할 오리진 설정 (개발환경)
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+
+        // 허용할 HTTP 메서드
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        // 허용할 헤더
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        // 인증 정보 포함 허용
+        configuration.setAllowCredentials(true);
+
+        // Preflight 요청 캐시 시간
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 
     // 비밀번호 암호화 (나중에 필요할 수 있음)
