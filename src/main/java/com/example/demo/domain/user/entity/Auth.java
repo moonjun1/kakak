@@ -45,10 +45,18 @@ public class Auth {
     @Column(name = "login_count", nullable = false)
     private Long loginCount;
 
+    @Column(name = "kakao_access_token", length = 512)
+    private String kakaoAccessToken;
+
+    @Column(name = "kakao_refresh_token", length = 512)
+    private String kakaoRefreshToken;
+
     @Builder
     public Auth(User user, String tokenType) {
         this.user = user;
         this.tokenType = tokenType != null ? tokenType : "Bearer";
+        this.kakaoAccessToken = kakaoAccessToken;
+        this.kakaoRefreshToken = kakaoRefreshToken;
         this.loginCount = 1L;
     }
 
@@ -56,5 +64,10 @@ public class Auth {
     public void updateLogin() {
         this.loginCount++;
         this.lastLoginAt = LocalDateTime.now();
+    }
+
+    public void updateKakaoTokens(String accessToken, String refreshToken) {
+        this.kakaoAccessToken = accessToken;
+        this.kakaoRefreshToken = refreshToken;
     }
 }
