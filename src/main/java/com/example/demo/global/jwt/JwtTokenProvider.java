@@ -38,23 +38,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // Refresh Token 생성 (kakaoId 포함하도록 수정)
-    public String generateRefreshToken() {
-        Date expiryDate = new Date(new Date().getTime() + refreshTokenExpireTime);
-
-        Claims claims = Jwts.claims();
-        claims.put("token_type", "refresh");
-
-        return Jwts.builder()
-                .setSubject(UUID.randomUUID().toString())
-                .setClaims(claims)
-                .setIssuedAt(new Date())
-                .setExpiration(expiryDate)
-                .signWith(secretKey, SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    // Refresh Token 생성 (kakaoId 포함 버전 - 추천)
+    // Refresh Token 생성 (kakaoId 포함 버전)
     public String generateRefreshTokenWithKakaoId(String kakaoId) {
         Date expiryDate = new Date(new Date().getTime() + refreshTokenExpireTime);
 
@@ -80,17 +64,6 @@ public class JwtTokenProvider {
                 .getBody();
 
         return claims.get("kakao_id", String.class);
-    }
-
-    // 토큰에서 토큰 타입 확인
-    public String getTokenTypeFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-
-        return claims.get("token_type", String.class);
     }
 
     // 토큰 유효성 검증

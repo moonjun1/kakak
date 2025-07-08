@@ -2,7 +2,6 @@ package com.example.demo.global.config;
 
 import com.example.demo.global.jwt.JwtAuthenticationFilter;
 import com.example.demo.global.oauth.CustomOAuth2UserService;
-import com.example.demo.global.oauth.OAuth2LoginSuccessHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +29,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
-    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    // ✅ OAuth2LoginSuccessHandler 제거 (순환 참조 해결)
 
     @Bean
     public ObjectMapper objectMapper() {
@@ -89,12 +88,12 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // OAuth2 로그인 설정
+                // ✅ OAuth2 로그인 설정 (Handler 제거)
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)
                         )
-                        .successHandler(oAuth2LoginSuccessHandler)
+                        // ✅ successHandler 제거 (순환 참조 해결)
                         .failureHandler((request, response, exception) -> {
                             response.setContentType("application/json");
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

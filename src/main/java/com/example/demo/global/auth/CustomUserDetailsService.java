@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
 
+@Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -15,7 +17,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     // Spring Security가 로그인 시 호출하는 메서드 (username = kakao_id)
     @Override
     public UserDetails loadUserByUsername(String kakaoId) throws UsernameNotFoundException {
-        User user = userRepository.findByKakaoId(kakaoId)
+        User user = userRepository.findByUserId(kakaoId)  // 변경: findByKakaoId → findByUserId
                 .orElseThrow(() -> new UsernameNotFoundException("해당 사용자가 존재하지 않습니다: " + kakaoId));
 
         return new CustomUserDetails(user);
@@ -36,6 +38,6 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     // 사용자 존재 여부 확인
     public boolean existsByKakaoId(String kakaoId) {
-        return userRepository.existsByKakaoId(kakaoId);
+        return userRepository.existsByUserId(kakaoId);  // 변경: existsByKakaoId → existsByUserId
     }
 }

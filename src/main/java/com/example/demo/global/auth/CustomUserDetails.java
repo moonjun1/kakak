@@ -4,7 +4,6 @@ import com.example.demo.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -15,11 +14,10 @@ public class CustomUserDetails implements UserDetails {
 
     private final User user;
 
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singleton(
-                new SimpleGrantedAuthority(user.getRole().name())
+                new SimpleGrantedAuthority("ROLE_USER")  // 간단하게 고정값 사용
         );
     }
 
@@ -30,7 +28,7 @@ public class CustomUserDetails implements UserDetails {
 
     // 카카오 ID 반환 (사용자 식별자)
     public String getKakaoId() {
-        return user.getKakaoId();
+        return user.getKakaoId();  // user.getUserId()와 동일
     }
 
     // 비밀번호 (카카오 로그인이므로 null)
@@ -63,9 +61,9 @@ public class CustomUserDetails implements UserDetails {
         return true;
     }
 
-    // 계정 활성화 여부 (User의 status 확인)
+    // 계정 활성화 여부
     @Override
     public boolean isEnabled() {
-        return user.getStatus().equals("ACTIVE");
+        return "ACTIVE".equals(user.getStatus());
     }
 }

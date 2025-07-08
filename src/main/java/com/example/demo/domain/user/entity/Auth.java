@@ -9,13 +9,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "auth")
@@ -28,46 +25,30 @@ public class Auth {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_key", nullable = false)
     private User user;
 
-    @Column(name = "token_type", nullable = false)
-    private String tokenType;  // "Bearer"
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "last_login_at", nullable = false)
-    private LocalDateTime lastLoginAt;
-
-    @Column(name = "login_count", nullable = false)
-    private Long loginCount;
-
-    @Column(name = "kakao_access_token", length = 512)
-    private String kakaoAccessToken;
-
-    @Column(name = "kakao_refresh_token", length = 512)
-    private String kakaoRefreshToken;
+    @Column(name = "refresh_key", length = 255)
+    private String refreshKey;  // 카카오 리프레시 토큰 저장
 
     @Builder
-    public Auth(User user, String tokenType) {
+    public Auth(User user, String refreshKey) {
         this.user = user;
-        this.tokenType = tokenType != null ? tokenType : "Bearer";
-        this.kakaoAccessToken = kakaoAccessToken;
-        this.kakaoRefreshToken = kakaoRefreshToken;
-        this.loginCount = 1L;
+        this.refreshKey = refreshKey;
     }
 
-    // 로그인 시 호출 (로그인 횟수 증가, 마지막 로그인 시간 업데이트)
-    public void updateLogin() {
-        this.loginCount++;
-        this.lastLoginAt = LocalDateTime.now();
+    // 카카오 리프레시 토큰 업데이트
+    public void updateKakaoRefreshToken(String kakaoRefreshToken) {
+        this.refreshKey = kakaoRefreshToken;
     }
 
-    public void updateKakaoTokens(String accessToken, String refreshToken) {
-        this.kakaoAccessToken = accessToken;
-        this.kakaoRefreshToken = refreshToken;
+    // 카카오 리프레시 토큰 조회
+    public String getKakaoRefreshToken() {
+        return this.refreshKey;
+    }
+
+    // 토큰 존재 여부 확인
+    public boolean hasKakaoRefreshToken() {
+        return this.refreshKey != null && !this.refreshKey.isEmpty();
     }
 }

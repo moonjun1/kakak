@@ -1,11 +1,8 @@
 package com.example.demo.domain.user.entity;
 
-import com.example.demo.global.auth.Role;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -29,37 +26,36 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "kakao_id", nullable = false, unique = true)
-    private String kakaoId;
+    @Column(name = "user_id", nullable = false, unique = true)
+    private String userId;  // 카카오ID
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "status", nullable = false)
-    private String status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
-    private Role role;
-
-    // Auth와 1:1 관계 추가
+    // Auth와 1:1 관계
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Auth auth;
 
     @Builder
-    public User(String kakaoId, String status, Role role) {
-        this.kakaoId = kakaoId;
-        this.status = status != null ? status : "ACTIVE";
-        this.role = role != null ? role : Role.ROLE_USER;
+    public User(String userId) {
+        this.userId = userId;
     }
 
-    // 상태 변경 메서드
-    public void updateStatus(String status) {
-        this.status = status;
+    // 기존 코드 호환성을 위한 메서드들
+    public String getKakaoId() {
+        return this.userId;
     }
 
-    // Auth 설정 메서드 (양방향 관계 설정)
+    public String getStatus() {
+        return "ACTIVE";
+    }
+
+    public String getRole() {
+        return "ROLE_USER";
+    }
+
+    // Auth 설정 메서드
     public void setAuth(Auth auth) {
         this.auth = auth;
     }
